@@ -8,7 +8,7 @@ format:
 
 # build -> build application
 build:
-	go build -o ./.tmp/main ./cmd/server
+	go build -o ./.tmp/main ./cmd
 
 # run -> application
 run:
