@@ -26,8 +26,14 @@ func NewTransactionHandler(services service.Services) ITransactionHandler {
 }
 
 func (h TransactionHandler) CreateTransaction(ctx *gin.Context) {
-	err := h.Services.TransactionServices.CreateTransaction(ctx, dto.CreateTransactionRequest{})
-	if err != nil {
+	var data dto.CreateTransactionRequest
+	if err := ctx.ShouldBind(&data); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+	if err := h.Services.TransactionServices.CreateTransaction(ctx, data); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"message": err.Error(),
 		})
