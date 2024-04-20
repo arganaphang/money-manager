@@ -1,0 +1,11 @@
+version: "3"
+services:
+  postgres:
+    container_name: money_manager_database
+    image: postgres:alpine
+    environment:
+      POSTGRES_DB: money_manager
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - 5432:5432
