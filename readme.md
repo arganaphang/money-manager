@@ -1,5 +1,21 @@
 # Money Manager
 
+## Tools
+- Go Migrate
+- Justfile
+- Watchexec
+- Curl
+- Docker + Docker Compose
+- PostgreSQL
+
+## Dependencies
+- Gin Gonic
+- Go sqlx + goqu
+- gotestdox
+- Testify
+- Test Container
+
+## RestAPI Endpoints
 - [ ] Create Transaction [POST]
 - [ ] Get List Transaction [GET]
 - [ ] Get Detail Transaction [GET]
