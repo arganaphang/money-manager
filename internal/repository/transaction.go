@@ -2,72 +2,139 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/arganaphang/money-manager/internal/dto"
 	"github.com/arganaphang/money-manager/internal/model"
+	"github.com/doug-martin/goqu/v9"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 )
 
 type ITransactionRepository interface {
 	CreateTransaction(ctx context.Context, data dto.CreateTransactionRequest) error
-	GetTransactions(ctx context.Context) ([]model.Transaction, error)
+	GetTransactions(ctx context.Context, req dto.GetTransactionsRequest) ([]model.Transaction, error)
 	GetTransactionByID(ctx context.Context, id uuid.UUID) (*model.Transaction, error)
-	UpdateTransactionByID(ctx context.Context, id uuid.UUID, data dto.UpdateTransactionRequest) error
+	UpdateTransactionByID(ctx context.Context, id uuid.UUID, data dto.UpdateTransactionByIDRequest) error
 	DeleteTransactionByID(ctx context.Context, id uuid.UUID) error
 }
 
 type TransactionRepository struct {
-	// DB CONN
-	DB []model.Transaction
+	db *sqlx.DB
 }
 
-func NewTransactionRepository( /* DB CONN */ ) ITransactionRepository {
+func NewTransactionRepository(db *sqlx.DB) ITransactionRepository {
 	return &TransactionRepository{
-		// DB CONN
-		DB: []model.Transaction{},
+		db: db,
 	}
 }
 
 func (r *TransactionRepository) CreateTransaction(ctx context.Context, data dto.CreateTransactionRequest) error {
-	now := time.Now()
-	r.DB = append(r.DB, model.Transaction{
-		ID:        uuid.New(),
-		Title:     data.Title,
-		Note:      data.Note,
-		Amount:    data.Amount,
-		Type:      data.Type,
-		CreatedAt: now,
-		UpdatedAt: now,
-		DeletedAt: nil,
-	})
+	query, _, err := goqu.
+		Insert("transactions").
+		Rows(goqu.Record{
+			"title":  data.Title,
+			"note":   data.Note,
+			"amount": data.Amount,
+			"type":   data.Type,
+		}).
+		ToSQL()
+	if err != nil {
+		return err
+	}
+	_, err = r.db.Exec(query)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func (r TransactionRepository) GetTransactions(ctx context.Context) ([]model.Transaction, error) {
-	return r.DB, nil
+func (r TransactionRepository) GetTransactions(ctx context.Context, req dto.GetTransactionsRequest) ([]model.Transaction, error) {
+	limitOffset := req.TransformToLimitOffset()
+	sql := goqu.From("transactions")
+	query, _, err := sql.
+		Where(goqu.Ex{
+			"deleted_at": nil,
+		}).
+		Order(goqu.I("created_at").Desc()).
+		Limit(limitOffset.Limit).
+		Offset(limitOffset.Offset).
+		ToSQL()
+	if err != nil {
+		return nil, err
+	}
+
+	var transactions []model.Transaction
+	rows, err := r.db.Queryx(query)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var transaction model.Transaction
+		err = rows.StructScan(&transaction)
+		if err != nil {
+			return nil, err
+		}
+		transactions = append(transactions, transaction)
+	}
+	return transactions, nil
 }
 
 func (r TransactionRepository) GetTransactionByID(ctx context.Context, id uuid.UUID) (*model.Transaction, error) {
-	var result *model.Transaction // nil
-	for _, item := range r.DB {
-		item := item
-		if item.ID == id {
-			result = &item
-			break
-		}
+	query, _, err := goqu.
+		From("transactions").
+		Where(goqu.Ex{
+			"id":         id,
+			"deleted_at": nil,
+		}).
+		Limit(1).
+		ToSQL()
+	if err != nil {
+		return nil, err
 	}
-	if result == nil {
-		return nil, errors.New("not found")
+
+	var transaction model.Transaction
+	err = r.db.QueryRowx(query).StructScan(&transaction)
+	if err != nil {
+		return nil, err
 	}
-	return &model.Transaction{}, nil
+	return &transaction, nil
 }
 
-func (r TransactionRepository) UpdateTransactionByID(ctx context.Context, id uuid.UUID, data dto.UpdateTransactionRequest) error {
+func (r TransactionRepository) UpdateTransactionByID(ctx context.Context, id uuid.UUID, data dto.UpdateTransactionByIDRequest) error {
+	// TODO: Update Record
+	now := time.Now()
+	query, _, err := goqu.
+		Update("transactions").
+		Set(goqu.Record{
+			"updated_at": now,
+		}).
+		Where(goqu.Ex{"id": id}).
+		ToSQL()
+	if err != nil {
+		return err
+	}
+	_, err = r.db.Exec(query)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func (r TransactionRepository) DeleteTransactionByID(ctx context.Context, id uuid.UUID) error {
+	now := time.Now()
+	query, _, err := goqu.
+		Update("notifications").
+		Set(goqu.Record{"deleted_at": now}).
+		Where(goqu.Ex{"id": id}).
+		ToSQL()
+	if err != nil {
+		return err
+	}
+
+	_, err = r.db.Exec(query)
+	if err != nil {
+		return err
+	}
 	return nil
 }

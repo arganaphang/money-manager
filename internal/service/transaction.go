@@ -10,10 +10,10 @@ import (
 )
 
 type ITransactionService interface {
-	CreateTransaction(ctx context.Context, data dto.CreateTransactionRequest) error
-	GetTransactions(ctx context.Context) ([]model.Transaction, error)
+	CreateTransaction(ctx context.Context, req dto.CreateTransactionRequest) error
+	GetTransactions(ctx context.Context, req dto.GetTransactionsRequest) ([]model.Transaction, error)
 	GetTransactionByID(ctx context.Context, id uuid.UUID) (*model.Transaction, error)
-	UpdateTransactionByID(ctx context.Context, id uuid.UUID, data dto.UpdateTransactionRequest) error
+	UpdateTransactionByID(ctx context.Context, id uuid.UUID, data dto.UpdateTransactionByIDRequest) error
 	DeleteTransactionByID(ctx context.Context, id uuid.UUID) error
 }
 
@@ -29,15 +29,15 @@ func (s TransactionService) CreateTransaction(ctx context.Context, data dto.Crea
 	return s.Repositories.TransactionRepository.CreateTransaction(ctx, data)
 }
 
-func (s TransactionService) GetTransactions(ctx context.Context) ([]model.Transaction, error) {
-	return s.Repositories.TransactionRepository.GetTransactions(ctx)
+func (s TransactionService) GetTransactions(ctx context.Context, req dto.GetTransactionsRequest) ([]model.Transaction, error) {
+	return s.Repositories.TransactionRepository.GetTransactions(ctx, req)
 }
 
 func (s TransactionService) GetTransactionByID(ctx context.Context, id uuid.UUID) (*model.Transaction, error) {
 	return s.Repositories.TransactionRepository.GetTransactionByID(ctx, id)
 }
 
-func (s TransactionService) UpdateTransactionByID(ctx context.Context, id uuid.UUID, data dto.UpdateTransactionRequest) error {
+func (s TransactionService) UpdateTransactionByID(ctx context.Context, id uuid.UUID, data dto.UpdateTransactionByIDRequest) error {
 	return s.Repositories.TransactionRepository.UpdateTransactionByID(ctx, id, data)
 }
 

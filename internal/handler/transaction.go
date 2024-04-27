@@ -39,22 +39,30 @@ func (h TransactionHandler) CreateTransaction(ctx *gin.Context) {
 		})
 		return
 	}
-	ctx.JSON(http.StatusCreated, gin.H{
-		"message": "transaction created",
+	ctx.JSON(http.StatusCreated, dto.CreateTransactionResponse{
+		Message: "transaction created",
 	})
 }
 
 func (h TransactionHandler) GetTransactions(ctx *gin.Context) {
-	result, err := h.Services.TransactionServices.GetTransactions(ctx)
+	var data dto.GetTransactionsRequest
+	if err := ctx.ShouldBindQuery(&data); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+	result, err := h.Services.TransactionServices.GetTransactions(ctx, data)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"message": err.Error(),
 		})
 		return
 	}
-	ctx.JSON(http.StatusCreated, gin.H{
-		"message": "get transactions",
-		"data":    result,
+	ctx.JSON(http.StatusCreated, dto.GetTransactionsResponse{
+		Message: "get transactions",
+		Data:    result,
+		Meta:    data.Pagination,
 	})
 }
 
@@ -66,22 +74,22 @@ func (h TransactionHandler) GetTransactionByID(ctx *gin.Context) {
 		})
 		return
 	}
-	ctx.JSON(http.StatusCreated, gin.H{
-		"message": "get transaction by id",
-		"data":    result,
+	ctx.JSON(http.StatusCreated, dto.GetTransactionByIDResponse{
+		Message: "get transaction by id",
+		Data:    result,
 	})
 }
 
 func (h TransactionHandler) UpdateTransactionByID(ctx *gin.Context) {
-	err := h.Services.TransactionServices.UpdateTransactionByID(ctx, uuid.New(), dto.UpdateTransactionRequest{})
+	err := h.Services.TransactionServices.UpdateTransactionByID(ctx, uuid.New(), dto.UpdateTransactionByIDRequest{})
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"message": err.Error(),
 		})
 		return
 	}
-	ctx.JSON(http.StatusCreated, gin.H{
-		"message": "transaction updated",
+	ctx.JSON(http.StatusCreated, dto.UpdateTransactionByIDResponse{
+		Message: "transaction updated",
 	})
 }
 
@@ -93,7 +101,7 @@ func (h TransactionHandler) DeleteTransactionByID(ctx *gin.Context) {
 		})
 		return
 	}
-	ctx.JSON(http.StatusCreated, gin.H{
-		"message": "delete transaction by id",
+	ctx.JSON(http.StatusCreated, dto.DeleteTransactionByIDResponse{
+		Message: "delete transaction by id",
 	})
 }
